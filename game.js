@@ -16,7 +16,19 @@ function Item(feature){
 	}
 }
 
-
+	//when an item is hit
+function hitInH(x, y, grid){
+	grid[x][y].health+=20;
+}
+function hitInP(x, y, grid){
+	grid[x][y].point+=20;	
+}
+function hitDeH(x, y, grid){
+	grid[x][y].health-=20;
+}
+function hitDeP(x, y, grid){
+	grid[x][y].point-=20;
+}
 
 
 //A Bot has health and points
