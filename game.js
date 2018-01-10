@@ -14,22 +14,8 @@ function Item(feature){
 	}else{
 		this.deP = true;
 	}
+	this.key=feature;
 }
-
-	//when an item is hit
-function hitInH(x, y, grid){
-	grid[x][y].health+=20;
-}
-function hitInP(x, y, grid){
-	grid[x][y].point+=20;	
-}
-function hitDeH(x, y, grid){
-	grid[x][y].health-=20;
-}
-function hitDeP(x, y, grid){
-	grid[x][y].point-=20;
-}
-
 
 //A Bot has health and points
 //Bots start with 100 health and 0 points;
@@ -38,25 +24,51 @@ function Bot(){
 	this.point=0;
 }
 
+//makes random number in range but isnt param
+function randomButNotThis(x, n){
+	var z = Math.floor(Math.random() * n);
+	if(z==x){
+		if(z==0){
+			z++;
+		}else{
+			z--;
+		}
+	}
+	return z;
+}
+
+///consumes grid, posn of item, posn of enemy, posn of player
+function dealWithItem(grid, ix, iy, ex, ey, px, py){
+	if(grid[ix][iy].inH){
+		grid[px][py].health+=20;
+	}else if(grid[ix][iy].inP){
+		grid[px][py].point+=20;
+	}else if(grid[ix][iy].deH){
+		grid[ex][ey].health-=20;
+	}else{
+		grid[ex][ey].point-=20;
+	}
+}
+
+
+
 //outputs a 2d array into the console
 //consumes grid, grid dimention, and coordinates of player 1
-function generateGrid(grid, side, x1, y1){
+function generateGrid(grid, side, x1, y2){
 	var output="Current Grid:\n";
 	for (var i = 0; i < side; i++) {
 		for (var j = 0; j<side; j++) {
 		    if(grid[i][j] instanceof Bot){
-		    	if(x1==i && y1 == j){
+		    	if(x1==i && y2 == j){
 		    		output+= " X ";
 		    	}else{
 		    		output+= " Y ";
 		    	}
 		    }else if (grid[i][j] instanceof Item){
-		    	output+= " I ";
+		    	output+= " " + grid[i][j].key + " ";
 		    }else{
 		    	output+= " - ";
-		    }
-
-		    
+		    }		    
 		}
 		output+="\n";
 	}
@@ -64,27 +76,34 @@ function generateGrid(grid, side, x1, y1){
 }
 
 $(document).ready(function(){
+	//ok weird things in this code:
+	//xs are actual y when the board is drawn out. 
+
+
 	//lots of things commented out for the sake of testing
 //	alert("Hi! This is the bot fight program for Kristy Gao. \nEverything will be happening in the console and through alerts, so make sure to ctrl+shift+i");
 //	alert("The grid will be outputed in the console. \nX is player one. Y is player two. \nItems are I. Empty spaces are - \nEach player will be promted to move.")
-	var n =  10 //prompt("How large is the board?");
+	var n =  10; //prompt("How large is the board?");
 	//initialize grid
 	var grid = new Array(n);
 	for (var i = 0; i < n; i++) {
 	  grid[i] = new Array(n);
 	}
 
+
 	///NOTE need to make sure initial coordinates are not the same for robots and items
 
 
 	var x1 = Math.floor(Math.random() * n); //x coordinate of p1
 	var y1 = Math.floor(Math.random() * n); //y coordinate of p1 
-	var x2 = Math.floor(Math.random() * n); //x coordinate of p2
-	var y2 = Math.floor(Math.random() * n); //y coordinate of p2
+	var x2 = randomButNotThis(x1, n) //x coordinate of p2
+	var y2 = randomButNotThis(y2, n); //y coordinate of p2
 	grid[x1][y1] = new Bot();
 	grid[x2][y2] = new Bot();
 
 	//Ive decided that half the dimention of the grid is an appropriate number of items 
+	//I'm tight on time so Im not going to check for coordinate conficts. 
+	//Its not a big deal if the items are over written, and the chances of overwritting more than 1 are slim
 	for (var i = 0; i < Math.ceil(n/2); i++) {
 		var y = Math.floor(Math.random() * n);
 		var option = Math.floor(Math.random() * 4) + 1;
@@ -92,6 +111,89 @@ $(document).ready(function(){
 	}
 
 	generateGrid(grid, n, x1, y1);
+
+	var over = false;
+	//time for the game!
+ 	while(!over){
+		var p1move = prompt("P1, where do you want to move? [R, L, U, D]");
+		var p2move = prompt("P2, where do you want to move? [R, L, U, D]");
+		var nextX1 = x1;var nextY1 = y1;
+		var nextX2 = x2;var nextY2 = y2;
+		//lets look at where the bots will move
+		if(p1move === "R" && y1!=(n-1)){
+			nextY1++;
+		} else if(p1move === "U" && x1!=0){
+			nextX1--;
+		} else if(p1move === "D" && x1!=(n-1) ){
+			nextX1++;
+		} else if(p1move === "L"&&y1!=0){
+			nextY1--;
+		}else{
+			alert("dont be silly!");
+		}
+
+		if(p2move === "R" && y2!=(n-1)){
+			nextY2++;
+		} else if(p2move === "U" && x2!=0){
+			nextX2--;
+		} else if(p2move === "D" && x2!=(n-1) ){
+			nextX2++
+		} else if(p2move === "L"&&y2!=0){
+			nextY2--;
+		}else{
+			alert("dont be silly!");
+		}
+
+		//deal with a bot hitting an item
+		if(grid[nextX2][nextY2] instanceof Item){
+			dealWithItem(grid, nextX2, nextY2, x1, y1, x2, y2);			
+		}
+		if(grid[nextX1][nextY1] instanceof Item){
+			dealWithItem(grid, nextX1, nextY1, x2, y2, x1, y1);
+		}
+
+		//if bots collide
+		if(nextY1==nextY2 && nextX2 == nextX1){
+			if(grid[x1][y1].point > grid[x2][y2].point){
+				alert("Game over!! Player1 wins.");				
+			}else if(grid[x1][y1].point < grid[x2][y2].point){
+				alert("Game over!! Player2 wins.");
+			}else{ 
+				alert("Game over!! Tie!!!");
+			}			
+			over = true; break;
+		}
+
+		//move bots over
+		grid[nextX1][nextY1] =grid[x1][y1];
+		if(!(nextX1 == x1 && nextY1 == y1)){
+			grid[x1][y1] = 0;			
+		}
+		grid[nextX2][nextY2] =grid[x2][y2];
+		if(!(nextX2 == x2 && nextY2 == y2)){
+			grid[x2][y2] = 0;			
+		}
+		x1=nextX1; y1=nextY1;
+		x2=nextX2; y2=nextY2;
+
+		//if anyone's health is dead, game over
+		if((grid[x1][y1].health < 0) && (grid[x2][y2].health < 0)){
+			alert("Game over!! Tie!!!");
+			over=true; break;
+		}else if(grid[x1][y1].health < 0){
+			alert("Game over!! Player2 wins.");
+			over=true; break;
+		}else if(grid[x2][y2].health < 0){
+			alert("Game over!! Player1 wins.");
+			over=true; break;
+		}
+
+		generateGrid(grid, n, x1, y1);
+		
+		console.log("Player1: \tHeath: " + grid[x1][y1].health + "\tPoints: " + grid[x1][y1].point);
+		console.log("Player2: \tHeath: " + grid[x2][y2].health + "\tPoints: " + grid[x2][y2].point);	
+	}
+
 
 })
 
